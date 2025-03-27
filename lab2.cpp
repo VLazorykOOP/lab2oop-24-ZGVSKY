@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <fstream>
+#include <bitset>
 
 
 void ex_one() {
@@ -31,11 +32,94 @@ void ex_one() {
 }
 
 void crypt() {
+    //  функция для шифрування тексту з файлу
+    // шляхи до файлів
+    const std::string& inputFile = "C:\\Users\\User\\OOPLab2_22\\OOPLab2Tpl\\input.txt";
+    const std::string& outputFile = "C:\\Users\\User\\OOPLab2_22\\OOPLab2Tpl\\out\\output.bin";
 
+    // відкриваємо файли
+    std::ifstream input(inputFile);
+    std::ofstream output(outputFile);
+
+    // Перевірка відкриття файлу
+    if (!input) {
+        std::cerr << "Error while open: " << inputFile << std::endl;
+    }
+
+    char text[4][16] = {}; // Масив для збереження 4 рядків по 16 символів (заповнюється пробілами)
+    std::string line;
+
+    // Зчитування тексту з файлу
+    for (int i = 0; i < 4 && std::getline(input, line); ++i) {
+        for (size_t j = 0; j < line.size() && j < 16; ++j) {
+            text[i][j] = line[j]; // Записуємо символи у масив
+        }
+    }
+    input.close();
+
+    // Прохід по всіх символах і їх шифрування максимум 4 рядка по 16 символів на рядок
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 16; ++col) {
+            char ch = text[row][col] ? text[row][col] : ' '; // Якщо символ відсутній, замінюємо пробілом
+
+            // записуємо наш зашифрований код
+            int encoded = (row << 14) | (col << 10) | (ch << 2); //
+
+            // Додавання біта парності
+            encoded |= (__builtin_parity((row << 4) | col) << 1) | __builtin_parity(ch);// використовуємо вбудовану функцію підрахунку біта парності
+
+            std::cout << "char: " << ch << " -> " << std::bitset<16>(encoded) << std::endl;
+
+            // Запис результату у вихідний файл у вигляді двійкового коду
+            output.write(reinterpret_cast<char*>(&encoded), sizeof(encoded));
+        }
+    }
+    output.close();
+
+    std::cout << "result: " << outputFile << std::endl;
 }
 
-void decrypt() {
 
+
+void decrypt() {
+    //  функция для розшифрування тексту з файлу
+    // шляхи до файлів
+    const std::string& inputFile = "C:\\Users\\User\\OOPLab2_22\\OOPLab2Tpl\\out\\output.bin";
+    const std::string& outputFile = "C:\\Users\\User\\OOPLab2_22\\OOPLab2Tpl\\out\\decrypted.txt";
+
+    // відкриваємо файли
+    std::ifstream input(inputFile);
+    std::ofstream output(outputFile);
+
+    // Перевірка відкриття файлу
+    if (!input) {
+        std::cerr << "Error while open: " << inputFile << std::endl;
+    }
+    char text[4][16] = {}; // Масив для збереження 4 рядків по 16 символів (заповнюється пробілами)
+    int encoded;
+
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 16; ++col) {
+            input.read(reinterpret_cast<char*>(&encoded), sizeof(encoded));
+
+            // Відновлення символу
+            int extracted_row = (encoded >> 14) & 0b11;
+            int extracted_col = (encoded >> 10) & 0b1111;
+            char ch = (encoded >> 2) & 0xFF;
+
+            text[extracted_row][extracted_col] = ch;
+        }
+    }
+    input.close();
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            std::cout << text[i][j];
+            output << text[i][j];
+        }
+        std::cout << std::endl;
+        output << std::endl;
+    }
+    output.close();
 }
 
 int main() {
